@@ -23,15 +23,17 @@ public class RandomDataGenerator {
 
     public static void generateData(String path, int size, int keys) {
         Path file = Paths.get(path);
-        try(BufferedWriter writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)){
+        try {
+            Files.createDirectories(file.getParent());
+            BufferedWriter writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8);
             int rows = (BYTES_IN_GB / ROW_SIZE) * size;
             Random rn = new Random();
             for(int i = 0; i < rows; i++) {
                 int key = (keys == -1) ? i : rn.nextInt(keys);
                 writer.write(String.format(ROW_TEMPLATE, key, RandomStringUtils.randomAlphabetic(ROW_SIZE)));
             }
-        }catch(IOException ex){
-            ex.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
