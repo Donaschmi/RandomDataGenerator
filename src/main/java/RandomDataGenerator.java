@@ -23,6 +23,7 @@ public class RandomDataGenerator {
 
     public static void generateData(String path, int size, int keys) {
         Path file = Paths.get(path);
+        Files.createDirectories(file.getParent());
         try(BufferedWriter writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)){
             int rows = (BYTES_IN_GB / ROW_SIZE) * size;
             Random rn = new Random();
