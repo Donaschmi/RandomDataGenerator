@@ -1,12 +1,37 @@
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import org.apache.commons.cli.*;
 import org.apache.commons.lang3.RandomStringUtils;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Random;
+
 import static java.lang.Integer.parseInt;
 
+/**
+ * Random Data Generator intended to create large files of dummy data
+ * @author Donatien Schmitz
+ */
 public class RandomDataGenerator {
+
+    private static final int ROW_SIZE = 1024;
+    private static final int BYTES_IN_GB = 1073741824;
+    private static final String ROW_TEMPLATE = "%d|%s\n";
+
+    public static void generateData(String path, int size, int keys) {
+        try(BufferedWriter writer = Files.newBufferedWriter(Path.of(path), StandardCharsets.UTF_8)){
+            int rows = (BYTES_IN_GB / ROW_SIZE) * size;
+            Random rn = new Random();
+            for(int i = 0; i < rows; i++) {
+                int key = (keys == -1) ? i : rn.nextInt(keys);
+                writer.write(String.format(ROW_TEMPLATE, key, RandomStringUtils.randomAlphabetic(ROW_SIZE)));
+            }
+        }catch(IOException ex){
+            ex.printStackTrace();
+        }
+    }
 
     public static void main(String[] args) {
         int size = 1;
@@ -32,6 +57,8 @@ public class RandomDataGenerator {
             // oops, something went wrong
             System.err.println("Parsing failed.  Reason: " + exp.getMessage());
         }
+        System.out.printf("%d, %d, %s%n", size, keys, dataDir);
+        generateData(dataDir, size, keys);
     }
 
     public static Options options() {
