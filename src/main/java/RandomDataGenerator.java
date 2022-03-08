@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Random;
 
 import static java.lang.Integer.parseInt;
@@ -21,7 +22,8 @@ public class RandomDataGenerator {
     private static final String ROW_TEMPLATE = "%d|%s\n";
 
     public static void generateData(String path, int size, int keys) {
-        try(BufferedWriter writer = Files.newBufferedWriter(Path.of(path), StandardCharsets.UTF_8)){
+        Path file = Paths.get(path);
+        try(BufferedWriter writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)){
             int rows = (BYTES_IN_GB / ROW_SIZE) * size;
             Random rn = new Random();
             for(int i = 0; i < rows; i++) {
