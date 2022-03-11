@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Random;
 
+import static java.lang.Double.parseDouble;
 import static java.lang.Integer.parseInt;
 
 /**
@@ -21,15 +22,27 @@ public class RandomDataGenerator {
     private static final int BYTES_IN_GB = 1073741824;
     private static final String ROW_TEMPLATE = "%d|%s\n";
 
-    public static void generateData(String path, int size, int keys) {
+    final static public Random RANDOM = new Random(System.currentTimeMillis());
+    final static public double BIAS = 1.0;
+
+    // From https://stackoverflow.com/a/13548135
+    static public int nextSkewedBoundedDouble(int min, int max, double skew) {
+        double range = max - min;
+        double mid = min + range / 2.0;
+        double unitGaussian = RANDOM.nextGaussian();
+        double biasFactor = Math.exp(BIAS);
+        double retval = mid+(range*(biasFactor/(biasFactor+Math.exp(-unitGaussian/skew))-0.5));
+        return (int) retval;
+    }
+
+    public static void generateData(int size, int keys, String path, double skewness) {
         Path file = Paths.get(path);
         try {
             Files.createDirectories(file.getParent());
             BufferedWriter writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8);
             int rows = (BYTES_IN_GB / ROW_SIZE) * size;
-            Random rn = new Random();
             for(int i = 0; i < rows; i++) {
-                int key = (keys == -1) ? i : rn.nextInt(keys);
+                int key = (keys == -1) ? i : (skewness == 0.0 ? RANDOM.nextInt(keys) : nextSkewedBoundedDouble(0, keys, skewness));
                 writer.write(String.format(ROW_TEMPLATE, key, RandomStringUtils.randomAlphabetic(ROW_SIZE)));
             }
         } catch (IOException e) {
@@ -41,6 +54,7 @@ public class RandomDataGenerator {
         int size = 1;
         int keys = 10;
         String dataDir = "/tmp/table.dat";
+        double skewness = 0;
 
         // create the parser
         CommandLineParser parser = new DefaultParser();
@@ -56,13 +70,16 @@ public class RandomDataGenerator {
 
             if (line.hasOption("dataDir"))
                 dataDir = line.getOptionValue("dataDir");
+
+            if (line.hasOption("skewness"))
+                skewness = parseDouble(line.getOptionValue("skewness"));
         }
         catch (ParseException exp) {
             // oops, something went wrong
             System.err.println("Parsing failed.  Reason: " + exp.getMessage());
         }
         System.out.printf("%d, %d, %s%n", size, keys, dataDir);
-        generateData(dataDir, size, keys);
+        generateData(size, keys, dataDir, skewness);
     }
 
     public static Options options() {
@@ -87,10 +104,18 @@ public class RandomDataGenerator {
                 .desc("Path to data dir")
                 .build();
 
+        Option skewness = Option
+                .builder("skewness")
+                .argName("skewness")
+                .hasArg()
+                .desc("Skewness, 0 if unskewered data")
+                .build();
+
         Options options = new Options();
         options.addOption(size);
         options.addOption(keys);
         options.addOption(dataDir);
+        options.addOption(skewness);
 
         return options;
     }
