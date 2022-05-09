@@ -18,7 +18,6 @@ import static java.lang.Integer.parseInt;
  */
 public class RandomDataGenerator {
 
-    private static final int ROW_SIZE = 1024;
     private static final int BYTES_IN_GB = 1073741824;
     private static final String ROW_TEMPLATE = "%d|%s\n";
 
@@ -35,15 +34,15 @@ public class RandomDataGenerator {
         return (int) retval;
     }
 
-    public static void generateData(int size, int keys, String path, double skewness) {
+    public static void generateData(int size, int rowSize, int keys, String path, double skewness) {
         Path file = Paths.get(path);
         try {
             Files.createDirectories(file.getParent());
             BufferedWriter writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8);
-            int rows = (BYTES_IN_GB / ROW_SIZE) * size;
+            int rows = (BYTES_IN_GB / rowSize) * size;
             for(int i = 0; i < rows; i++) {
                 int key = (keys == -1) ? i : (skewness == 0.0 ? RANDOM.nextInt(keys) : nextSkewedBoundedDouble(0, keys, skewness));
-                writer.write(String.format(ROW_TEMPLATE, key, RandomStringUtils.randomAlphabetic(ROW_SIZE)));
+                writer.write(String.format(ROW_TEMPLATE, key, RandomStringUtils.randomAlphabetic(rowSize)));
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -52,6 +51,7 @@ public class RandomDataGenerator {
 
     public static void main(String[] args) {
         int size = 1;
+        int rowSize = 1024;
         int keys = 10;
         String dataDir = "/tmp/table.dat";
         double skewness = 0;
@@ -64,6 +64,9 @@ public class RandomDataGenerator {
 
             if (line.hasOption("size"))
                 size = parseInt(line.getOptionValue("size"));
+
+            if (line.hasOption("rowSize"))
+                rowSize = parseInt(line.getOptionValue("rowSize"));
 
             if (line.hasOption("keys"))
                 keys = parseInt(line.getOptionValue("keys"));
@@ -79,7 +82,7 @@ public class RandomDataGenerator {
             System.err.println("Parsing failed.  Reason: " + exp.getMessage());
         }
         System.out.printf("%d, %d, %s%n", size, keys, dataDir);
-        generateData(size, keys, dataDir, skewness);
+        generateData(size, rowSize, keys, dataDir, skewness);
     }
 
     public static Options options() {
@@ -88,6 +91,13 @@ public class RandomDataGenerator {
                 .argName("size")
                 .hasArg()
                 .desc("dataset size")
+                .build();
+
+        Option rowSize = Option
+                .builder("rowSize")
+                .argName("rowSize")
+                .hasArg()
+                .desc("row size")
                 .build();
 
         Option keys = Option
@@ -113,6 +123,7 @@ public class RandomDataGenerator {
 
         Options options = new Options();
         options.addOption(size);
+        options.addOption(rowSize);
         options.addOption(keys);
         options.addOption(dataDir);
         options.addOption(skewness);
